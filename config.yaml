@@ -1,0 +1,17 @@
+# listen on all interfaces
+listen: "0.0.0.0"
+port: 6969
+
+# SQLite on an SSD is fine for a small PoC
+database:
+  backend: sqlite
+  path: "/app/relay.db"
+
+# Plug-in validator (module.path:ClassName)
+validators:
+  - "gpu_validator.GpuSigValidator"
+
+# A few generous limits so we can hammer it with nostr-bench
+limits:
+  messages_per_sec: 200000
+  subscriptions_per_min: 2000
