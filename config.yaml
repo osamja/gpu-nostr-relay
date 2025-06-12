@@ -1,17 +1,40 @@
-# listen on all interfaces
-listen: "0.0.0.0"
-port: 6969
+################################################################################
+# Nostr GPU Relay – minimal config file                                        #
+################################################################################
 
-# SQLite on an SSD is fine for a small PoC
-database:
-  backend: sqlite
-  path: "/app/relay.db"
+server:
+  host: 127.0.0.1      # bind to localhost (socat will proxy to 0.0.0.0:6969)
+  port: 8080
+  workers: 4           # adjust for CPU cores (Gunicorn forks)
 
-# Plug-in validator (module.path:ClassName)
-validators:
-  - "gpu_validator.GpuSigValidator"
+storage:
+  # File-backed SQLite; persisted in /data volume
+  sqlalchemy.url: sqlite+aiosqlite:///nostr.sqlite3   # Simplified URL format
 
-# A few generous limits so we can hammer it with nostr-bench
-limits:
-  messages_per_sec: 200000
-  subscriptions_per_min: 2000
+  # Recommended SQLite pragmas for concurrent reads/writes
+  pragmas:
+    journal_mode: WAL
+    synchronous: NORMAL
+
+gc:
+  # Garbage-collect every 5 minutes (default is 300 s)
+  interval: 300
+  enabled: true
+
+logging:
+  version: 1
+  disable_existing_loggers: false
+  formatters:
+    default:
+      format: '[%(asctime)s] %(levelname)s in %(module)s: %(message)s'
+  handlers:
+    console:
+      class: logging.StreamHandler
+      level: INFO
+      formatter: default
+      stream: ext://sys.stdout
+  root:
+    level: INFO
+    handlers: [console]
+
+# Any other nostr-relay sections (rate limits, auth, etc.) can go here.

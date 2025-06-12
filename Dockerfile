@@ -1,36 +1,59 @@
-# -------- build stage --------------------------------------------------------
-    FROM nvidia/cuda:12.4.0-devel-ubuntu22.04 AS build
+###############################################################################
+# Build stage – compiles cuECC and pre-downloads Python wheels               #
+###############################################################################
+FROM nvidia/cuda:12.4.0-devel-ubuntu22.04 AS build
 
-    # System deps
-    RUN apt-get update && \
-        DEBIAN_FRONTEND=noninteractive \
-        apt-get install -y --no-install-recommends \
-            python3.11 python3-pip git build-essential make curl && \
-        rm -rf /var/lib/apt/lists/*
-    
-    # Python relay
-    RUN pip install --no-cache-dir nostr-relay==1.14
-    
-    # CUDA secp256k1 library (cuECC)
-    RUN git clone https://github.com/betarixm/cuECC.git /tmp/cuECC && \
-        make -C /tmp/cuECC all && \
-        cp /tmp/cuECC/libcuecc.so /usr/local/lib/
-    
-    # -------- runtime stage ------------------------------------------------------
-    FROM nvidia/cuda:12.4.0-runtime-ubuntu22.04
-    
-    # Relay env
-    ENV PYTHONUNBUFFERED=1 \
-        RUST_LOG=info \
-        LD_PRELOAD=/usr/local/lib/libcuecc.so  # ensure CUDA lib is seen
-    
-    COPY --from=build /usr/local/lib/libcuecc.so /usr/local/lib/
-    COPY --from=build /usr/local/bin/nostr-relay /usr/local/bin/
-    COPY gpu_validator.py /app/gpu_validator.py
-    COPY config.yaml /app/config.yaml
-    
-    WORKDIR /app
-    EXPOSE 6969
-    
-    CMD ["nostr-relay", "-c", "/app/config.yaml", "serve"]
-    
+# ── System packages ───────────────────────────────────────────────────────────
+RUN apt-get update && DEBIAN_FRONTEND=noninteractive \
+    apt-get install -y --no-install-recommends \
+        python3.11 python3-pip git build-essential make curl \
+ && rm -rf /var/lib/apt/lists/*
+
+# ── Relay & deps ──────────────────────────────────────────────────────────────
+RUN pip install --no-cache-dir nostr-relay==1.14
+
+# ── Compile CUDA secp256k1 (cuECC) ────────────────────────────────────────────
+RUN git clone https://github.com/betarixm/cuECC.git /tmp/cuECC && \
+    make -C /tmp/cuECC all && \
+    cp /tmp/cuECC/build/libcuecc.so /usr/local/lib/ && \
+    ldconfig
+
+###############################################################################
+# Runtime stage – slim image with GPU libs, Python and the compiled library   #
+###############################################################################
+FROM nvidia/cuda:12.4.0-runtime-ubuntu22.04
+
+ENV PYTHONUNBUFFERED=1 \
+    RUST_LOG=info \
+    LD_PRELOAD=/usr/local/lib/libcuecc.so \
+    HOST=0.0.0.0 \
+    PORT=6969
+
+# ── Minimal Python runtime ────────────────────────────────────────────────────
+RUN apt-get update && DEBIAN_FRONTEND=noninteractive \
+    apt-get install -y --no-install-recommends python3.11 python3-pip \
+ && rm -rf /var/lib/apt/lists/*
+
+# ── Relay package (wheel already cached from build layer) ─────────────────────
+RUN pip install --no-cache-dir nostr-relay==1.14
+
+# ── Copy compiled CUDA library ────────────────────────────────────────────────
+COPY --from=build /usr/local/lib/libcuecc.so /usr/local/lib/
+RUN ldconfig   # refresh dynamic linker cache
+
+# ── Application files ────────────────────────────────────────────────────────
+# If you have custom scripts add them here
+COPY gpu_validator.py /app/gpu_validator.py
+COPY config.yaml      /app/config.yaml
+COPY start_relay.sh    /app/start_relay.sh
+RUN chmod +x /app/start_relay.sh
+
+# ── Prepare runtime dirs (SQLite lives here) ─────────────────────────────────
+RUN mkdir -p /data
+VOLUME ["/data"]          # keeps DB when container restarts
+
+WORKDIR /app
+EXPOSE 6969
+
+# ── Start the relay, binding to all interfaces ───────────────────────────────
+CMD ["/app/start_relay.sh"]
