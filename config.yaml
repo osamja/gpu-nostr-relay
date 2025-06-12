@@ -3,9 +3,9 @@
 ################################################################################
 
 server:
-  host: 127.0.0.1      # bind to localhost (socat will proxy to 0.0.0.0:6969)
-  port: 8080
-  workers: 4           # adjust for CPU cores (Gunicorn forks)
+  host: 0.0.0.0              # Bind to all interfaces
+  port: 6969                 # Use standard nostr port
+  workers: 4                 # adjust for CPU cores (Gunicorn forks)
 
 storage:
   # File-backed SQLite; persisted in /data volume
