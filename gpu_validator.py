@@ -1,40 +1,47 @@
 """
 Custom validator plug-in for nostr-relay
-Uses cuECC's CUDA batch verifier for secp256k1 signatures.
+CPU-based signature verification (GPU placeholder for future implementation)
 """
 
-from ctypes import cdll, c_int, c_char_p, POINTER
-from pathlib import Path
+import secp256k1
 
-# ---- load the shared library ------------------------------------------------
-LIB_PATH = Path("/usr/local/lib/libcuecc.so")
-cuecc = cdll.LoadLibrary(str(LIB_PATH))
+def verify_signature_cpu(event_id_hex: str, signature_hex: str, pubkey_hex: str) -> bool:
+    """CPU signature verification"""
+    try:
+        # Convert hex to bytes
+        event_id = bytes.fromhex(event_id_hex)
+        signature_bytes = bytes.fromhex(signature_hex)
+        pubkey_bytes = bytes.fromhex(pubkey_hex)
+        
+        # Create PublicKey object - pubkey_hex is 32 bytes (x-coordinate), add 0x02 prefix for compressed format
+        pubkey_full = b'\x02' + pubkey_bytes
+        pubkey = secp256k1.PublicKey(pubkey_full, raw=True)
+        
+        # Deserialize signature from compact format (64 bytes)
+        signature = pubkey.ecdsa_deserialize_compact(signature_bytes)
+        
+        # Verify signature - parameter order: (message, signature)
+        return pubkey.ecdsa_verify(event_id, signature)
+    except Exception:
+        return False
 
-# C function prototype: int verify_batch(int n, const char **msgs, const char **sigs)
-cuecc.verify_batch.argtypes = [c_int, POINTER(c_char_p), POINTER(c_char_p)]
-cuecc.verify_batch.restype = c_int  # returns number of *valid* signatures
-
-# ---- nostr-relay hook -------------------------------------------------------
-# nostr-relay will import this class and call .validate(events) asynchronously
 class GpuSigValidator:
+    """CPU-based signature validator (GPU implementation planned)"""
+    
     async def validate(self, events):
         """
-        `events` is a list of Event objects.
-        Each Event has `.id` (32-byte SHA-256 digest hex) and `.sig` (64-byte hex).
-        Returns a list[bool] aligned with `events` indicating validity.
+        Validate a batch of events using CPU verification
+        Returns list[bool] aligned with events indicating validity
         """
-        n = len(events)
-        if n == 0:
+        if not events:
             return []
-
-        # prepare C arrays of pointers to null-terminated bytes
-        MsgArray = c_char_p * n
-        SigArray = c_char_p * n
-        msgs = MsgArray(*[bytes.fromhex(e.id) for e in events])
-        sigs = SigArray(*[bytes.fromhex(e.sig) for e in events])
-
-        valid_count = cuecc.verify_batch(n, msgs, sigs)
-
-        # very naive: assume the function validates *all* or *none*
-        # (replace with bitmask output if you extend the C side)
-        return [True] * valid_count + [False] * (n - valid_count)
+        
+        results = []
+        for event in events:
+            try:
+                is_valid = verify_signature_cpu(event.id, event.sig, event.pubkey)
+                results.append(is_valid)
+            except Exception:
+                results.append(False)
+        
+        return results

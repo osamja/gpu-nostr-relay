@@ -34,8 +34,8 @@ RUN apt-get update && DEBIAN_FRONTEND=noninteractive \
     apt-get install -y --no-install-recommends python3.11 python3-pip \
  && rm -rf /var/lib/apt/lists/*
 
-# ── Relay package (wheel already cached from build layer) ─────────────────────
-RUN pip install --no-cache-dir nostr-relay==1.14
+# ── Relay package and GPU validator dependencies ─────────────────────────────
+RUN pip install --no-cache-dir nostr-relay==1.14 secp256k1>=0.14.0
 
 # ── Copy compiled CUDA library ────────────────────────────────────────────────
 COPY --from=build /usr/local/lib/libcuecc.so /usr/local/lib/

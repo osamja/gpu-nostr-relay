@@ -37,4 +37,11 @@ logging:
     level: INFO
     handlers: [console]
 
-# Any other nostr-relay sections (rate limits, auth, etc.) can go here.
+# GPU signature validator configuration
+validation:
+  signature_validator: "gpu_validator.GpuSigValidator"
+
+# Alternative configuration approaches to try:
+# plugins:
+#   validators:
+#     signature: "gpu_validator.GpuSigValidator"
