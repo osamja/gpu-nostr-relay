@@ -18,6 +18,14 @@ RUN git clone https://github.com/betarixm/cuECC.git /tmp/cuECC && \
     cp /tmp/cuECC/build/libcuecc.so /usr/local/lib/ && \
     ldconfig
 
+# ── Compile custom CUDA ECDSA verification library ────────────────────────────
+COPY cuda_ecdsa.cu /tmp/cuda_ecdsa.cu
+COPY Makefile /tmp/Makefile
+RUN cd /tmp && \
+    make && \
+    cp libcuda_ecdsa.so /usr/local/lib/ && \
+    ldconfig
+
 ###############################################################################
 # Runtime stage – slim image with GPU libs, Python and the compiled library   #
 ###############################################################################
@@ -35,15 +43,17 @@ RUN apt-get update && DEBIAN_FRONTEND=noninteractive \
  && rm -rf /var/lib/apt/lists/*
 
 # ── Relay package and GPU validator dependencies ─────────────────────────────
-RUN pip install --no-cache-dir nostr-relay==1.14 secp256k1>=0.14.0
+RUN pip install --no-cache-dir nostr-relay==1.14 secp256k1>=0.14.0 numpy
 
-# ── Copy compiled CUDA library ────────────────────────────────────────────────
+# ── Copy compiled CUDA libraries ─────────────────────────────────────────────
 COPY --from=build /usr/local/lib/libcuecc.so /usr/local/lib/
+COPY --from=build /usr/local/lib/libcuda_ecdsa.so /usr/local/lib/
 RUN ldconfig   # refresh dynamic linker cache
 
 # ── Application files ────────────────────────────────────────────────────────
 # If you have custom scripts add them here
 COPY gpu_validator.py /app/gpu_validator.py
+COPY cuda_gpu_validator.py /app/cuda_gpu_validator.py
 COPY gpu_patch.py     /app/gpu_patch.py
 COPY config.yaml      /app/config.yaml
 COPY start_relay.sh    /app/start_relay.sh
