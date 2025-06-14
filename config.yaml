@@ -9,12 +9,18 @@ server:
 
 storage:
   # File-backed SQLite; persisted in /data volume
-  sqlalchemy.url: sqlite+aiosqlite:///nostr.sqlite3   # Simplified URL format
+  sqlalchemy.url: sqlite+aiosqlite:///data/nostr.sqlite3   # Simplified URL format
 
   # Recommended SQLite pragmas for concurrent reads/writes
   pragmas:
     journal_mode: WAL
     synchronous: NORMAL
+  
+  # Custom validators - GPU signature validation
+  validators:
+    - gpu_validator.validate_signature
+    - nostr_relay.validators.is_not_too_large
+    - nostr_relay.validators.is_recent
 
 gc:
   # Garbage-collect every 5 minutes (default is 300 s)
@@ -37,11 +43,4 @@ logging:
     level: INFO
     handlers: [console]
 
-# GPU signature validator configuration
-validation:
-  signature_validator: "gpu_validator.GpuSigValidator"
-
-# Alternative configuration approaches to try:
-# plugins:
-#   validators:
-#     signature: "gpu_validator.GpuSigValidator"
+# GPU signature validator now configured in storage.validators section above

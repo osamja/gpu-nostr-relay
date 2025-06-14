@@ -36,7 +36,9 @@ class NostrEventGenerator:
     
     def __init__(self):
         self.private_key = secp256k1.PrivateKey()
-        self.public_key = self.private_key.pubkey.serialize(compressed=True)[1:]  # Remove 0x02/0x03 prefix
+        # Nostr uses 32-byte x-coordinate from uncompressed key
+        pubkey_full = self.private_key.pubkey.serialize(compressed=False)
+        self.public_key = pubkey_full[1:33]  # Remove 0x04 prefix, take x-coordinate
         
     def create_event(self, content: str = None, kind: int = 1) -> Dict[str, Any]:
         """Create a valid Nostr event with proper signature"""
@@ -66,15 +68,8 @@ class NostrEventGenerator:
         
         # Sign the event
         signature = self.private_key.ecdsa_sign(event_hash)
-        # Serialize signature to compact format (64 bytes)
-        sig_compact = secp256k1.ffi.new("unsigned char[64]")
-        result = secp256k1.lib.secp256k1_ecdsa_signature_serialize_compact(
-            secp256k1.secp256k1_ctx, sig_compact, signature
-        )
-        if result:
-            event["sig"] = bytes(sig_compact).hex()
-        else:
-            raise Exception("Failed to serialize signature")
+        # Use the simpler serialize_compact method
+        event["sig"] = self.private_key.ecdsa_serialize_compact(signature).hex()
         
         return event
 

@@ -25,6 +25,20 @@ def verify_signature_cpu(event_id_hex: str, signature_hex: str, pubkey_hex: str)
     except Exception:
         return False
 
+def validate_signature(event, config=None):
+    """
+    Validator function for nostr-relay
+    Raises StorageError if event is invalid, returns None if valid
+    """
+    from nostr_relay.storage.base import StorageError
+    
+    try:
+        is_valid = verify_signature_cpu(event.id, event.sig, event.pubkey)
+        if not is_valid:
+            raise StorageError("invalid: Bad signature")
+    except Exception as e:
+        raise StorageError(f"invalid: Signature validation error - {str(e)}")
+
 class GpuSigValidator:
     """CPU-based signature validator (GPU implementation planned)"""
     

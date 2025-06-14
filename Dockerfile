@@ -44,6 +44,7 @@ RUN ldconfig   # refresh dynamic linker cache
 # ── Application files ────────────────────────────────────────────────────────
 # If you have custom scripts add them here
 COPY gpu_validator.py /app/gpu_validator.py
+COPY gpu_patch.py     /app/gpu_patch.py
 COPY config.yaml      /app/config.yaml
 COPY start_relay.sh    /app/start_relay.sh
 RUN chmod +x /app/start_relay.sh

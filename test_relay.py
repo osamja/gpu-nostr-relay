@@ -15,7 +15,7 @@ async def test_basic_connection():
     """Test basic WebSocket connection to the relay"""
     print("🔄 Testing basic WebSocket connection...")
     try:
-        async with websockets.connect("ws://localhost:6968") as websocket:
+        async with websockets.connect("ws://localhost:6969") as websocket:
             print("✅ WebSocket connection successful!")
             
             # Send a simple REQ (request) message
@@ -63,7 +63,7 @@ async def test_event_submission():
     event["sig"] = "0" * 128  # Dummy signature (will fail validation)
     
     try:
-        async with websockets.connect("ws://localhost:6968") as websocket:
+        async with websockets.connect("ws://localhost:6969") as websocket:
             # Send EVENT message
             event_msg = ["EVENT", event]
             await websocket.send(json.dumps(event_msg))
@@ -98,7 +98,7 @@ async def test_relay_info():
     print("\n🔄 Testing relay information...")
     
     try:
-        async with websockets.connect("ws://localhost:6968") as websocket:
+        async with websockets.connect("ws://localhost:6969") as websocket:
             # Send REQ for relay metadata (kind 0 events)
             req_msg = ["REQ", "relay-info", {"kinds": [0], "limit": 1}]
             await websocket.send(json.dumps(req_msg))
@@ -131,7 +131,7 @@ async def monitor_relay_activity():
     print("\n🔄 Monitoring relay activity for 10 seconds...")
     
     try:
-        async with websockets.connect("ws://localhost:6968") as websocket:
+        async with websockets.connect("ws://localhost:6969") as websocket:
             # Subscribe to all events
             req_msg = ["REQ", "monitor", {}]
             await websocket.send(json.dumps(req_msg))
