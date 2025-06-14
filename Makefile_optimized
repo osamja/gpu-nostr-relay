@@ -1,0 +1,28 @@
+# Makefile for optimized CUDA ECDSA verification library
+
+NVCC = nvcc
+NVCC_FLAGS = -O3 -arch=sm_75 -shared -Xcompiler -fPIC --use_fast_math -maxrregcount=64
+CUDA_INCLUDES = -I/usr/local/cuda/include
+CUDA_LIBS = -L/usr/local/cuda/lib64 -lcudart
+
+# Target library
+TARGET = libcuda_ecdsa_optimized.so
+SOURCE = cuda_ecdsa_optimized.cu
+
+# Default target
+all: $(TARGET)
+
+# Build the optimized shared library
+$(TARGET): $(SOURCE)
+	$(NVCC) $(NVCC_FLAGS) $(CUDA_INCLUDES) -o $@ $< $(CUDA_LIBS)
+
+# Clean build artifacts
+clean:
+	rm -f $(TARGET)
+
+# Install to system library path
+install: $(TARGET)
+	cp $(TARGET) /usr/local/lib/
+	ldconfig
+
+.PHONY: all clean install

@@ -10,7 +10,7 @@ from typing import List, Tuple
 class CudaECDSAValidator:
     """GPU-accelerated ECDSA signature validator using custom CUDA implementation"""
     
-    def __init__(self, library_path="/usr/local/lib/libcuda_ecdsa.so"):
+    def __init__(self, library_path="./libcuda_ecdsa.so"):
         """Initialize CUDA ECDSA validator"""
         self.lib = None
         self.cuda_available = False
