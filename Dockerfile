@@ -56,15 +56,21 @@ COPY gpu_validator.py /app/gpu_validator.py
 COPY cuda_gpu_validator.py /app/cuda_gpu_validator.py
 COPY gpu_patch.py     /app/gpu_patch.py
 COPY config.yaml      /app/config.yaml
+COPY init_db.py       /app/init_db.py
 COPY start_relay.sh    /app/start_relay.sh
-RUN chmod +x /app/start_relay.sh
+RUN chmod +x /app/start_relay.sh /app/init_db.py
 
 # ── Prepare runtime dirs (SQLite lives here) ─────────────────────────────────
-RUN mkdir -p /data
+RUN mkdir -p /data && \
+    chmod 755 /data && \
+    chown -R nobody:nogroup /data 2>/dev/null || true
 VOLUME ["/data"]          # keeps DB when container restarts
 
 WORKDIR /app
 EXPOSE 6969
+
+# ── Ensure startup script is executable ──────────────────────────────────────
+RUN chmod +x /app/start_relay.sh
 
 # ── Start the relay, binding to all interfaces ───────────────────────────────
 CMD ["/app/start_relay.sh"]
