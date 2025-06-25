@@ -45,7 +45,7 @@ def verify_event(event):
 async def handler(websocket):
     async for raw in websocket:
         try:
-            import pdb; pdb.set_trace()
+            # import pdb; pdb.set_trace()
             msg = json.loads(raw)
             if msg[0] == "EVENT":
                 event = msg[1]

@@ -41,12 +41,6 @@ A simple Nostr client that:
 - Signs events with ECDSA
 - Sends events to a relay via WebSocket
 
-**Features:**
-- Automatic key generation using secp256k1
-- Proper event serialization according to Nostr specification
-- Event signing with compact signature format
-- WebSocket communication with relay
-
 ## Usage
 
 ### Starting the Relay
@@ -146,21 +140,6 @@ The test will:
 4. Request all events back and verify the event was stored correctly
 5. Clean up the test server
 
-### Manual Testing
-
-You can also test the relay with multiple clients or extend the client to:
-- Send multiple events
-- Subscribe to events from other clients
-- Implement custom event content
-
-## Debugging
-
-The relay includes a debug breakpoint (`pdb.set_trace()`) that you may want to remove for production use. To remove it, edit `minimal_relay.py` and delete or comment out line 30:
-
-```python
-# import pdb; pdb.set_trace()  # Remove this line
-```
-
 ## Next Steps
 
 To extend this implementation, consider:
@@ -170,6 +149,8 @@ To extend this implementation, consider:
 - Supporting additional event kinds
 - Adding real-time event broadcasting to subscribers
 - Implementing NIP (Nostr Implementation Possibilities) specifications
+
+And also check out some popular relay libraries.
 
 ## License
 

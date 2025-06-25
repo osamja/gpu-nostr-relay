@@ -1,4 +1,5 @@
 data/
+__pycache__
 
 # Benchmark results
 *benchmark_results.txt
