@@ -1,7 +1,7 @@
 import asyncio
 import json
 import hashlib
-from ecdsa import VerifyingKey, SECP256k1
+import secp256k1
 import websockets
 
 EVENTS = {}
@@ -19,9 +19,26 @@ def verify_event(event):
     if digest != event.get("id"):
         return False
     try:
-        vk = VerifyingKey.from_string(bytes.fromhex(event["pubkey"]), curve=SECP256k1)
-        vk.verify(bytes.fromhex(event["sig"]), bytes.fromhex(event["id"]))
-        return True
+        # Use secp256k1 library for compatibility with client
+        pubkey_bytes = bytes.fromhex(event["pubkey"])
+        sig_bytes = bytes.fromhex(event["sig"])
+        event_id_bytes = bytes.fromhex(event["id"])
+        
+        # Try both compressed formats (0x02 and 0x03 prefix) 
+        for prefix in [0x02, 0x03]:
+            try:
+                compressed_pubkey = bytes([prefix]) + pubkey_bytes
+                pubkey_obj = secp256k1.PublicKey(compressed_pubkey, raw=True)
+                
+                # Deserialize the compact signature using the ECDSA class
+                sig_obj = secp256k1.ECDSA().ecdsa_deserialize_compact(sig_bytes)
+                
+                # Verify the signature
+                pubkey_obj.ecdsa_verify(event_id_bytes, sig_obj, raw=True)
+                return True
+            except Exception:
+                continue
+        return False
     except Exception:
         return False
 
