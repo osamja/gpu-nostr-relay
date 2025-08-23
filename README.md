@@ -20,8 +20,8 @@ docker build -t nostr-gpu-relay:latest .
 # Run with GPU support
 docker run --gpus all -it -p 6969:6969 nostr-gpu-relay:latest
 
-# Run with persistent data
-docker run --gpus all -it -p 6969:6969 -v $(pwd)/data:/data nostr-gpu-relay:latest
+# Run with persistent data (todo: create default db table)
+# docker run --gpus all -it -p 6969:6969 -v $(pwd)/data:/data nostr-gpu-relay:latest
 ```
 
 ### Performance Benchmark
